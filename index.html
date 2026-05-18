@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sleep Earning</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #F8F7F4;
+      color: #1A1A1A;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 3rem 1.25rem 4rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 860px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 900;
+      text-align: center;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+
+    /* ── salary input ── */
+    .salary-row {
+      display: flex;
+      align-items: center;
+      border: 2.5px solid #1A1A1A;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #fff;
+      transition: border-color 0.15s;
+    }
+    .salary-row:focus-within { border-color: #6C63FF; }
+
+    .dollar-prefix {
+      padding: 0 0 0 1.25rem;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #555;
+      user-select: none;
+    }
+
+    #salary {
+      border: none;
+      outline: none;
+      background: transparent;
+      font-family: inherit;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1A1A1A;
+      padding: 0.65rem 1.25rem 0.65rem 0.4rem;
+      width: 180px;
+      -moz-appearance: textfield;
+    }
+    #salary::-webkit-outer-spin-button,
+    #salary::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+    .salary-label {
+      font-size: 0.85rem;
+      color: #888;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: -1rem;
+    }
+
+    /* ── pills grid ── */
+    .pills-grid {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1rem;
+    }
+
+    .pill {
+      background: var(--pill-color, #FFD6E0);
+      border-radius: 1.5rem;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+      cursor: default;
+    }
+    .pill:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+
+    .pill-emoji {
+      font-size: 2.4rem;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+
+    .pill-body {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .pill-name {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #2A2A2A;
+      line-height: 1.3;
+    }
+
+    .pill-earning {
+      font-size: 1.6rem;
+      font-weight: 900;
+      color: #1A1A1A;
+      letter-spacing: -0.02em;
+    }
+
+    /* ── refresh button ── */
+    .refresh-btn {
+      background: #1A1A2E;
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 0.75rem 2rem;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.01em;
+      transition: background 0.15s, transform 0.15s;
+    }
+    .refresh-btn:hover {
+      background: #2d2d52;
+      transform: scale(1.03);
+    }
+    .refresh-btn:active { transform: scale(0.98); }
+
+    @media (max-width: 500px) {
+      body { padding: 2rem 1rem 3rem; }
+      .pills-grid { grid-template-columns: 1fr; }
+      .pill-emoji { font-size: 2rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>How much did I make while:</h1>
+
+    <p class="salary-label">Your yearly salary</p>
+    <div class="salary-row">
+      <span class="dollar-prefix">$</span>
+      <input type="number" id="salary" value="75000" min="0" step="1000" placeholder="75000" />
+    </div>
+
+    <div class="pills-grid" id="pillsGrid"></div>
+
+    <button class="refresh-btn" id="refreshBtn">&#8635;&nbsp;&nbsp;Show me more</button>
+  </div>
+
+  <script>
+    const ACTIVITIES = [
+      { emoji: "🍺", name: "Having a beer with friends",    hours: 2     },
+      { emoji: "🥾", name: "Going for a long hike",         hours: 4     },
+      { emoji: "🛒", name: "Doing a run to Trader Joe's",   hours: 0.75  },
+      { emoji: "💒", name: "Going to my friends' wedding",  hours: 6     },
+      { emoji: "😴", name: "Taking a nap",                  hours: 1.5   },
+      { emoji: "🎬", name: "Watching a movie",              hours: 2     },
+      { emoji: "✂️",  name: "Getting a haircut",            hours: 0.75  },
+      { emoji: "🥞", name: "Sunday brunch",                 hours: 2     },
+      { emoji: "✈️",  name: "Catching a flight",            hours: 3     },
+      { emoji: "🧺", name: "Grocery shopping",              hours: 1     },
+      { emoji: "🧘", name: "A yoga class",                  hours: 1     },
+      { emoji: "🍷", name: "Date night dinner",             hours: 2.5   },
+      { emoji: "⛳", name: "Playing 18 holes of golf",      hours: 4     },
+      { emoji: "🏖️", name: "Road trip to the beach",       hours: 3     },
+      { emoji: "📺", name: "A Netflix binge session",       hours: 4     },
+      { emoji: "😤", name: "Waiting at the DMV",            hours: 2     },
+      { emoji: "🎂", name: "A birthday party",              hours: 4     },
+      { emoji: "🏋️", name: "Morning workout",              hours: 1     },
+      { emoji: "💆", name: "Getting a massage",             hours: 1     },
+      { emoji: "👨‍🍳", name: "Cooking a big meal",          hours: 1.5   },
+      { emoji: "📚", name: "Reading a book",                hours: 3     },
+      { emoji: "🌽", name: "A farmers market visit",        hours: 1.5   },
+      { emoji: "🍻", name: "Happy hour after work",         hours: 2     },
+      { emoji: "⛺", name: "A camping trip",                hours: 48    },
+      { emoji: "🛍️", name: "Black Friday shopping",        hours: 5     },
+      { emoji: "🏥", name: "A doctor's appointment",        hours: 1.5   },
+      { emoji: "🦃", name: "Thanksgiving dinner",           hours: 5     },
+      { emoji: "🎲", name: "Game night with friends",       hours: 3     },
+      { emoji: "💘", name: "A first date",                  hours: 2     },
+      { emoji: "🚌", name: "Morning commute",               hours: 0.75  },
+      { emoji: "🏈", name: "A college football game",       hours: 4     },
+      { emoji: "🥂", name: "New Year's Eve party",          hours: 6     },
+    ];
+
+    const COLORS = ["#FFD6E0", "#C3F0CA", "#FFF0B3", "#C5E8FF", "#E8D5FF", "#FFDAB9"];
+
+    let currentPills = [];
+
+    function getSalary() {
+      const val = parseFloat(document.getElementById("salary").value);
+      return isNaN(val) || val < 0 ? 75000 : val;
+    }
+
+    function computeEarning(salary, hours) {
+      const raw = (salary / 2080) * hours;
+      const opts = raw >= 100
+        ? { style: "currency", currency: "USD", maximumFractionDigits: 0 }
+        : { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 };
+      return new Intl.NumberFormat("en-US", opts).format(raw);
+    }
+
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function pickRandom4() {
+      currentPills = shuffle(ACTIVITIES).slice(0, 4);
+    }
+
+    function renderPills() {
+      const salary = getSalary();
+      const grid = document.getElementById("pillsGrid");
+      grid.innerHTML = currentPills.map((act, i) => `
+        <div class="pill" style="--pill-color: ${COLORS[i % COLORS.length]}">
+          <span class="pill-emoji">${act.emoji}</span>
+          <div class="pill-body">
+            <span class="pill-name">${act.name}</span>
+            <span class="pill-earning" data-hours="${act.hours}">${computeEarning(salary, act.hours)}</span>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function updateEarnings() {
+      const salary = getSalary();
+      document.querySelectorAll(".pill-earning").forEach(el => {
+        el.textContent = computeEarning(salary, parseFloat(el.dataset.hours));
+      });
+    }
+
+    function init() {
+      pickRandom4();
+      renderPills();
+      document.getElementById("salary").addEventListener("input", updateEarnings);
+      document.getElementById("refreshBtn").addEventListener("click", () => {
+        pickRandom4();
+        renderPills();
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>
