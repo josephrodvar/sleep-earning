@@ -166,7 +166,7 @@
     <p class="salary-label">Your yearly salary</p>
     <div class="salary-row">
       <span class="dollar-prefix">$</span>
-      <input type="number" id="salary" value="75000" min="0" step="1000" placeholder="75000" />
+      <input type="number" id="salary" value="43000" min="0" step="1000" placeholder="75000" />
     </div>
 
     <div class="pills-grid" id="pillsGrid"></div>
@@ -215,11 +215,11 @@
 
     function getSalary() {
       const val = parseFloat(document.getElementById("salary").value);
-      return isNaN(val) || val < 0 ? 75000 : val;
+      return isNaN(val) || val < 0 ? 43000 : val;
     }
 
     function computeEarning(salary, hours) {
-      const raw = (salary / 2080) * hours;
+      const raw = (salary / 8760) * hours;
       const opts = raw >= 100
         ? { style: "currency", currency: "USD", maximumFractionDigits: 0 }
         : { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 };
