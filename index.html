@@ -70,6 +70,10 @@
       width: 180px;
       -moz-appearance: textfield;
     }
+    #salary::placeholder {
+      color: #9a9a9a;
+      opacity: 1;
+    }
     #salary::-webkit-outer-spin-button,
     #salary::-webkit-inner-spin-button { -webkit-appearance: none; }
 
@@ -80,6 +84,31 @@
       letter-spacing: 0.04em;
       text-transform: uppercase;
       margin-bottom: -1rem;
+    }
+
+    .estimate-panel {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      align-items: center;
+      text-align: center;
+      padding: 0.25rem 1rem 0;
+    }
+
+    .estimate-value {
+      font-size: clamp(1.35rem, 3vw, 2rem);
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+    }
+
+    .estimate-meta {
+      max-width: 44rem;
+      font-size: 0.92rem;
+      line-height: 1.45;
+      color: #6d6d6d;
+      font-weight: 600;
     }
 
     /* ── pills grid ── */
@@ -166,7 +195,14 @@
     <p class="salary-label">Your yearly salary</p>
     <div class="salary-row">
       <span class="dollar-prefix">$</span>
-      <input type="number" id="salary" value="43000" min="0" step="1000" placeholder="75000" />
+      <input type="number" id="salary" min="0" step="1000" placeholder="43000" />
+    </div>
+
+    <div class="estimate-panel" aria-live="polite">
+      <div class="estimate-value" id="annualAfterTax"></div>
+      <div class="estimate-meta">
+        Massachusetts assumed. This uses annual salary divided by 8,760 hours, then applies a simple state tax estimate. Estimate only.
+      </div>
     </div>
 
     <div class="pills-grid" id="pillsGrid"></div>
@@ -175,6 +211,9 @@
   </div>
 
   <script>
+    const DEFAULT_SALARY = 43000;
+    const MASSACHUSETTS_WITHHOLDING_RATE = 0.05;
+
     const ACTIVITIES = [
       { emoji: "🍺", name: "Having a beer with friends",    hours: 2     },
       { emoji: "🥾", name: "Going for a long hike",         hours: 4     },
@@ -215,15 +254,30 @@
 
     function getSalary() {
       const val = parseFloat(document.getElementById("salary").value);
-      return isNaN(val) || val < 0 ? 43000 : val;
+      return isNaN(val) || val < 0 ? DEFAULT_SALARY : val;
     }
 
-    function computeEarning(salary, hours) {
-      const raw = (salary / 8760) * hours;
-      const opts = raw >= 100
+    function formatCurrency(amount) {
+      const opts = amount >= 100
         ? { style: "currency", currency: "USD", maximumFractionDigits: 0 }
         : { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 };
-      return new Intl.NumberFormat("en-US", opts).format(raw);
+      return new Intl.NumberFormat("en-US", opts).format(amount);
+    }
+
+    function computeGrossHourlyRate(salary) {
+      return salary / 8760;
+    }
+
+    function computeAfterTaxHourlyRate(salary) {
+      return computeGrossHourlyRate(salary) * (1 - MASSACHUSETTS_WITHHOLDING_RATE);
+    }
+
+    function computeAfterTaxEarning(salary, hours) {
+      return computeAfterTaxHourlyRate(salary) * hours;
+    }
+
+    function computeAfterTaxAnnualIncome(salary) {
+      return salary * (1 - MASSACHUSETTS_WITHHOLDING_RATE);
     }
 
     function shuffle(arr) {
@@ -247,26 +301,35 @@
           <span class="pill-emoji">${act.emoji}</span>
           <div class="pill-body">
             <span class="pill-name">${act.name}</span>
-            <span class="pill-earning" data-hours="${act.hours}">${computeEarning(salary, act.hours)}</span>
+            <span class="pill-earning" data-hours="${act.hours}">${formatCurrency(computeAfterTaxEarning(salary, act.hours))}</span>
           </div>
         </div>
       `).join("");
     }
 
+    function updateSummary() {
+      const salary = getSalary();
+      document.getElementById("annualAfterTax").textContent =
+        `Estimated after-tax yearly income: ${formatCurrency(computeAfterTaxAnnualIncome(salary))}`;
+    }
+
     function updateEarnings() {
       const salary = getSalary();
       document.querySelectorAll(".pill-earning").forEach(el => {
-        el.textContent = computeEarning(salary, parseFloat(el.dataset.hours));
+        el.textContent = formatCurrency(computeAfterTaxEarning(salary, parseFloat(el.dataset.hours)));
       });
+      updateSummary();
     }
 
     function init() {
       pickRandom4();
       renderPills();
+      updateSummary();
       document.getElementById("salary").addEventListener("input", updateEarnings);
       document.getElementById("refreshBtn").addEventListener("click", () => {
         pickRandom4();
         renderPills();
+        updateSummary();
       });
     }
 
